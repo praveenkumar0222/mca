@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  mca-web:
+    build:
+      context: .  
+    container_name: mca-container
+    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app  
+    ports:
+      - "8035:8000"  
+    networks:
+      - mynetwork  
+    restart: unless-stopped 
+
+networks:
+  mynetwork:
+    driver: bridge  
