@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ exam_type.name }} Mock Tests{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'exam_types' %}">Exams</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ exam_type.name }} Mock Tests</li>
+            </ol>
+        </nav>
+        <h2>{{ exam_type.name }} Mock Tests</h2>
+        <p class="text-muted">Select a mock test to practice full-length exams</p>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 g-4">
+    {% for mock_test in mock_tests %}
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">{{ mock_test.title }}</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ mock_test.description }}</p>
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Duration
+                        <span class="badge bg-warning text-dark rounded-pill">{{ mock_test.duration }} mins</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Total Marks
+                        <span class="badge bg-warning text-dark rounded-pill">{{ mock_test.total_marks }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Questions
+                        <span class="badge bg-warning text-dark rounded-pill">{{ mock_test.questions.count }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'start_mock_test' mock_test.id %}" class="btn btn-warning">Start Test</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col">
+        <div class="alert alert-info">No mock tests available for this exam type.</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

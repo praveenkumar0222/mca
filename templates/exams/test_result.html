@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Test Result{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'exam_types' %}">Exams</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'test_history' %}">My Tests</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Test Result</li>
+                </ol>
+            </nav>
+            <h2>Test Result</h2>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        {% if attempt.mock_test %}
+                            {{ attempt.mock_test.title }}
+                        {% elif attempt.subject %}
+                            {{ attempt.subject.name }} (Subject Test)
+                        {% elif attempt.chapter %}
+                            {{ attempt.chapter.name }} (Chapter Test)
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="display-4 text-primary">{{ attempt.score }}</div>
+                            <p class="text-muted">Score</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="display-4 text-success">{{ percentage }}%</div>
+                            <p class="text-muted">Percentage</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="display-4 text-info">{{ attempt.total_questions }}</div>
+                            <p class="text-muted">Total Questions</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <span>Started: {{ attempt.start_time|date:"M d, Y H:i" }}</span>
+                        <span>Completed: {{ attempt.end_time|date:"M d, Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Performance Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Correct Answers</h6>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: {{ percentage }}%">{{ correct_count }}</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Incorrect Answers</h6>
+                        <div class="progress">
+                            <div class="progress-bar bg-danger" style="width: {{ incorrect_percentage }}%">{{ incorrect_count }}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h6>Time Taken</h6>
+                        <p>{{ duration|floatformat }} minutes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Question Review</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="questionsAccordion">
+                        {% for user_answer in user_answers %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                <button class="accordion-button {% if not user_answer.is_correct %}bg-danger text-white{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="true" aria-controls="collapse{{ forloop.counter }}">
+                                    Question #{{ forloop.counter }}: {% if user_answer.is_correct %}<i class="fas fa-check-circle text-success ms-2"></i>{% else %}<i class="fas fa-times-circle text-white ms-2"></i>{% endif %}
+                                </button>
+                            </h2>
+                            <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#questionsAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Question:</strong> {{ user_answer.question.text }}</p>
+                                    <p><strong>Your answer:</strong> {{ user_answer.selected_option }}</p>
+                                    {% if not user_answer.is_correct %}
+                                        <p class="text-success"><strong>Correct answer:</strong> {{ user_answer.question.correct_option }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

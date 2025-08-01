@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4>Welcome, {{ user.username }}!</h4>
+            </div>
+            <div class="card-body">
+                <p>This is your dashboard. You can start taking tests from here.</p>
+                <a href="{% url 'exam_types' %}" class="btn btn-primary">Browse Exams</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

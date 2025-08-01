@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    .question-container {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .answer-option {
+        padding: 10px 15px;
+        margin: 5px 0;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+    }
+    .answer-option:hover {
+        background-color: #e9ecef;
+    }
+    .answer-option.selected {
+        background-color: #d4edff;
+        border-color: #007bff;
+    }
+    .answer-option.correct {
+        background-color: #d4edda;
+        border-color: #28a745;
+    }
+    .answer-option.incorrect {
+        background-color: #f8d7da;
+        border-color: #dc3545;
+    }
+    .explanation {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e7f1ff;
+        border-left: 4px solid #0d6efd;
+        border-radius: 4px;
+        display: none;
+    }
+    .radio-input {
+        margin-right: 10px;
+    }
+    .navigation-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* New styles for question number boxes in top right */
+    .question-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .question-numbers-top {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 300px;
+    }
+    .question-number-box {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        background-color: #e9ecef;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: #495057;
+        font-weight: 500;
+        border: 1px solid #dee2e6;
+        font-size: 14px;
+    }
+    .question-number-box:hover {
+        background-color: #dee2e6;
+    }
+    .question-number-box.current {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    .question-number-box.answered {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+    .question-position {
+        font-size: 18px;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Question header with position and numbers -->
+    <div class="question-header">
+        <div class="question-position">Question {{ progress.current }} of {{ progress.total }}</div>
+        <div class="question-numbers-top">
+            {% for q_num in progress.question_range %}
+            <a href="?question={{ q_num }}" 
+               class="question-number-box 
+                      {% if q_num == progress.current %}current{% endif %}
+                      {% if q_num in progress.answered_questions %}answered{% endif %}">
+                {{ q_num }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="question-container">
+        <h4>{{ question.text }}</h4>
+        
+        <form id="answerForm">
+            {% csrf_token %}
+            <input type="hidden" name="question_id" value="{{ question.id }}">
+            
+            {% for answer in question.answers.all %}
+            <div class="answer-option 
+                        {% if answer.id == selected_answer_id %}selected{% endif %}"
+                onclick="selectAnswer(this, {{ answer.id }})">
+                <input type="radio" 
+                    name="answer" 
+                    value="{{ answer.id }}" 
+                    class="radio-input"
+                    {% if answer.id == selected_answer_id %}checked{% endif %}>
+                {{ answer.text }}
+            </div>
+            {% endfor %}
+        </form>
+        
+        <div id="explanation" class="explanation">
+            <div id="userAnswerDisplay" class="mb-2"></div>
+            <div id="correctAnswerDisplay" class="mb-2"></div>
+            <div id="explanationText"></div>
+        </div>
+    </div>
+
+    <div class="navigation-buttons">
+        <a href="?question={{ progress.current|add:'-1' }}" 
+           class="btn btn-secondary {% if not progress.has_previous %}disabled{% endif %}">
+            Previous
+        </a>
+        
+        {% if progress.has_next %}
+        <a href="?question={{ progress.current|add:'1' }}" class="btn btn-primary">Next</a>
+        {% else %}
+        <a href="{% url 'test_result' attempt.id %}" class="btn btn-success">Finish Test</a>
+        {% endif %}
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function selectAnswer(element, answerId) {
+    // Remove any existing selections for this question only
+    const questionContainer = element.closest('.question-container');
+    questionContainer.querySelectorAll('.answer-option').forEach(opt => {
+        opt.classList.remove('selected', 'correct', 'incorrect');
+    });
+    
+    // Mark selected answer
+    element.classList.add('selected');
+    element.querySelector('input[type="radio"]').checked = true;
+    
+    // Submit answer via AJAX
+    const formData = new FormData(document.getElementById('answerForm'));
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        const explanationDiv = document.getElementById('explanation');
+        const userAnswerDisplay = document.getElementById('userAnswerDisplay');
+        const correctAnswerDisplay = document.getElementById('correctAnswerDisplay');
+        const explanationText = document.getElementById('explanationText');
+        
+        // Show the explanation div
+        explanationDiv.style.display = 'block';
+        
+        // Set user's answer
+        userAnswerDisplay.innerHTML = `<strong>Your answer:</strong> ${element.textContent.trim()}`;
+        
+        if(data.is_correct) {
+            element.classList.add('correct');
+            correctAnswerDisplay.innerHTML = '<span class="text-success">✓ Correct!</span>';
+        } else {
+            element.classList.add('incorrect');
+            const correctElement = document.querySelector(`[value="${data.correct_answer_id}"]`).parentElement;
+            correctElement.classList.add('correct');
+            correctAnswerDisplay.innerHTML = `<strong>Correct answer:</strong> ${correctElement.textContent.trim()}`;
+        }
+        
+        // Set the explanation text
+        explanationText.textContent = '{{ question.explanation|escapejs }}';
+        
+        // Update the question number box to show this question as answered
+        const currentQuestionNumber = {{ progress.current }};
+        const questionNumberElements = document.querySelectorAll('.question-number-box');
+        questionNumberElements[currentQuestionNumber - 1].classList.add('answered');
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}
